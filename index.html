@@ -1,0 +1,693 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Malla Curricular - Carrera de Contabilidad ISIL</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'] },
+                    colors: {
+                        isil: { blue: '#00a8e8', darkblue: '#0077b6', orange: '#ff8c00', yellow: '#ffbe0b', red: '#e63946', grey: '#2b2d42' }
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f5f9; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        .course-item { transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1); }
+        .course-item.completed { opacity: 0.85; background-color: #f0fdf4; border-color: #bbf7d0; }
+        .course-item.completed .course-title { text-decoration: line-through; color: #166534; }
+        .course-item.in-progress { background-color: #eff6ff; border-color: #bfdbfe; }
+        .donut-segment { transition: stroke-dasharray 0.5s ease, stroke-dashoffset 0.5s ease; }
+    </style>
+</head>
+<body class="bg-slate-50 text-slate-800 font-sans min-h-screen flex flex-col antialiased">
+
+    <header class="bg-white border-b border-slate-200 sticky top-0 z-30 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="bg-isil-blue text-white font-extrabold text-xl px-3 py-1.5 rounded-lg shadow-md tracking-wider">
+                    ISIL
+                </div>
+                <div>
+                    <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight leading-tight">
+                        CARRERA DE <span class="text-isil-blue">CONTABILIDAD</span>
+                    </h1>
+                    <p class="text-xs text-slate-500 font-medium">Malla Curricular Interactiva & Control de Avance</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 bg-slate-100 p-1.5 rounded-xl border border-slate-200">
+                <span class="text-xs font-bold text-slate-600 pl-2">Estudio en el:</span>
+                <select id="userCycleSelect" onchange="changeUserCycle(this.value)" class="bg-white border border-slate-300 text-slate-800 font-bold text-xs rounded-lg px-2.5 py-1 focus:outline-none focus:ring-2 focus:ring-isil-blue">
+                    <option value="1">Ciclo 1</option>
+                    <option value="2">Ciclo 2</option>
+                    <option value="3">Ciclo 3</option>
+                    <option value="4">Ciclo 4</option>
+                    <option value="5">Ciclo 5</option>
+                    <option value="6">Ciclo 6</option>
+                </select>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2">
+                <button onclick="openRecommendationModal()" class="text-xs font-bold px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white rounded-lg transition-all shadow-sm flex items-center gap-1.5 animate-pulse">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Recomendar Próximo Ciclo
+                </button>
+                <button onclick="markAll(true)" class="text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-check-double text-emerald-600"></i> Completar Todo
+                </button>
+                <button onclick="markAll(false)" class="text-xs font-semibold px-3 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-rotate-left text-amber-600"></i> Desmarcar Todo
+                </button>
+                <button onclick="resetProgress()" class="text-xs font-semibold px-3 py-2 bg-red-50 hover:bg-red-100 text-red-600 rounded-lg transition-colors flex items-center gap-1.5">
+                    <i class="fa-solid fa-trash-can"></i> Reiniciar
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-1 w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8 mb-8">
+            <div class="lg:col-span-5 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div>
+                    <div class="flex justify-between items-start mb-4">
+                        <div>
+                            <h2 class="text-lg font-bold text-slate-900">Progreso General</h2>
+                            <p class="text-xs text-slate-500">Resumen total de créditos y asignaturas</p>
+                        </div>
+                        <span id="globalPercentageBadge" class="bg-isil-blue/10 text-isil-blue font-bold text-sm px-3 py-1 rounded-full">0%</span>
+                    </div>
+
+                    <div class="w-full bg-slate-100 h-4 rounded-full overflow-hidden mb-6 flex">
+                        <div id="globalProgressBar" class="bg-gradient-to-r from-isil-blue to-isil-darkblue h-full transition-all duration-500 rounded-full" style="width: 0%"></div>
+                    </div>
+
+                    <div class="grid grid-cols-4 gap-2 text-center mb-6">
+                        <div class="p-2.5 bg-slate-50 rounded-xl border border-slate-100">
+                            <span class="block text-xl font-extrabold text-slate-800" id="totalCreditsCount">0/126</span>
+                            <span class="text-[10px] font-semibold text-slate-500 uppercase tracking-wider">Créditos</span>
+                        </div>
+                        <div class="p-2.5 bg-emerald-50 rounded-xl border border-emerald-100">
+                            <span class="block text-xl font-extrabold text-emerald-600" id="completedCoursesCount">0</span>
+                            <span class="text-[10px] font-semibold text-emerald-600 uppercase tracking-wider">Aprobados</span>
+                        </div>
+                        <div class="p-2.5 bg-blue-50 rounded-xl border border-blue-100">
+                            <span class="block text-xl font-extrabold text-blue-600" id="inProgressCoursesCount">0</span>
+                            <span class="text-[10px] font-semibold text-blue-600 uppercase tracking-wider">En Proceso</span>
+                        </div>
+                        <div class="p-2.5 bg-purple-50 rounded-xl border border-purple-100">
+                            <span class="block text-xl font-extrabold text-purple-600" id="gpaScore">--.--</span>
+                            <span class="text-[10px] font-semibold text-purple-600 uppercase tracking-wider">Promedio</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="motivationBanner" class="p-3.5 bg-blue-50 border border-blue-100 text-blue-800 rounded-xl text-xs flex items-center gap-3">
+                    <i class="fa-solid fa-graduation-cap text-lg text-isil-blue"></i>
+                    <div>
+                        <span class="font-bold block" id="motivationTitle">¡Comienza tu carrera!</span>
+                        <span class="text-blue-600" id="motivationText">Haz clic en los cursos o ingresa tus notas para llevar tu registro.</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col md:flex-row items-center justify-between gap-6">
+                <div class="relative w-52 h-52 flex-shrink-0 flex items-center justify-center">
+                    <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100" id="donutSvg">
+                        <circle cx="50" cy="50" r="38" stroke="#f1f5f9" stroke-width="18" fill="none" />
+                    </svg>
+                    <div class="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+                        <span class="text-xl font-black text-isil-blue tracking-tight">ISIL</span>
+                        <span class="text-[9px] font-bold text-slate-400 tracking-widest uppercase">CONTABILIDAD</span>
+                    </div>
+                </div>
+
+                <div class="flex-1 w-full space-y-2 text-xs">
+                    <h3 class="font-bold text-slate-800 mb-2 flex items-center justify-between">
+                        <span>Áreas Académicas</span>
+                        <span class="text-[11px] text-slate-400 font-normal">Ponderación</span>
+                    </h3>
+                    <div id="donutLegend" class="space-y-1.5"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex flex-col md:flex-row justify-between items-center gap-4 mb-6">
+            <div class="relative w-full md:w-80">
+                <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400 text-sm"></i>
+                <input type="text" id="searchInput" oninput="filterCourses()" placeholder="Buscar curso..." class="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-isil-blue shadow-sm">
+            </div>
+
+            <div class="flex bg-slate-200/70 p-1 rounded-xl w-full md:w-auto text-xs font-semibold overflow-x-auto">
+                <button onclick="setFilter('all')" id="filterAll" class="filter-btn px-3 py-2 rounded-lg transition-all bg-white text-slate-900 shadow-sm">Todos (<span id="countAll">36</span>)</button>
+                <button onclick="setFilter('pending')" id="filterPending" class="filter-btn px-3 py-2 rounded-lg transition-all text-slate-600">Pendientes (<span id="countPending">36</span>)</button>
+                <button onclick="setFilter('in-progress')" id="filterInProgress" class="filter-btn px-3 py-2 rounded-lg transition-all text-slate-600">En Proceso (<span id="countInProgress">0</span>)</button>
+                <button onclick="setFilter('completed')" id="filterCompleted" class="filter-btn px-3 py-2 rounded-lg transition-all text-slate-600">Completados (<span id="countCompleted">0</span>)</button>
+            </div>
+        </div>
+
+        <div id="categoriesContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+    </main>
+
+    <!-- Modal de Recomendación -->
+    <div id="recommendationModal" class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white rounded-2xl max-w-2xl w-full shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="bg-gradient-to-r from-blue-600 to-indigo-700 p-5 text-white flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="p-2 bg-white/20 rounded-xl"><i class="fa-solid fa-wand-magic-sparkles text-xl"></i></div>
+                    <div>
+                        <h3 class="font-bold text-lg">Recomendación de Cursos</h3>
+                        <p class="text-xs text-blue-100">Planifica Contabilidad según tu avance</p>
+                    </div>
+                </div>
+                <button onclick="closeRecommendationModal()" class="text-white/80 hover:text-white text-xl p-1"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+
+            <div class="p-6 overflow-y-auto space-y-4 flex-1">
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-blue-50 p-4 rounded-xl border border-blue-100 text-xs">
+                    <div>
+                        <label class="font-bold text-blue-900 block mb-1">Recomendar para el:</label>
+                        <select id="targetCycleSelect" onchange="generateRecommendations()" class="w-full bg-white border border-blue-200 text-blue-900 font-bold rounded-lg px-2.5 py-1.5 focus:outline-none">
+                            <option value="2">Ciclo 2</option>
+                            <option value="3">Ciclo 3</option>
+                            <option value="4">Ciclo 4</option>
+                            <option value="5">Ciclo 5</option>
+                            <option value="6">Ciclo 6</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="font-bold text-blue-900 block mb-1">Cursos que planeo llevar:</label>
+                        <select id="maxCoursesSelect" onchange="generateRecommendations()" class="w-full bg-white border border-blue-200 text-blue-900 font-bold rounded-lg px-2.5 py-1.5 focus:outline-none">
+                            <option value="3">3 Cursos</option>
+                            <option value="4">4 Cursos</option>
+                            <option value="5">5 Cursos</option>
+                            <option value="6" selected>6 Cursos (Recomendado)</option>
+                        </select>
+                    </div>
+                </div>
+                <div id="recommendationsList" class="space-y-3"></div>
+            </div>
+
+            <div class="bg-slate-50 p-4 border-t border-slate-200 flex justify-end gap-3">
+                <button onclick="closeRecommendationModal()" class="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-800">Cerrar</button>
+                <button onclick="applyRecommendations()" class="px-4 py-2 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-sm flex items-center gap-2">
+                    <i class="fa-solid fa-play"></i> Cargar estos cursos a "En Proceso"
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-white border-t border-slate-200 py-6 mt-12 text-center text-xs text-slate-400">
+        <p>Malla Curricular Interactiva • ISIL - Carrera de Contabilidad</p>
+    </footer>
+
+    <script>
+        const curriculumData = [
+            {
+                id: 'contabilidad-negocios',
+                name: 'Contabilidad Aplicada a los Negocios',
+                percentage: 34,
+                color: '#00a0e9',
+                borderColor: 'border-sky-200',
+                badgeBg: 'bg-sky-500',
+                courses: [
+                    { id: 'cn1', name: 'Fundamentos de Contabilidad', credits: 4, cycle: 1, reqs: [] },
+                    { id: 'cn2', name: 'Documentación Comercial y Contable', credits: 3, cycle: 1, reqs: [] },
+                    { id: 'cn3', name: 'Contabilidad de Inventarios', credits: 4, cycle: 2, reqs: ['cn1'] },
+                    { id: 'cn4', name: 'Gestión de Planillas', credits: 3, cycle: 2, reqs: [] },
+                    { id: 'cn5', name: 'Análisis y Gestión Tributaria', credits: 4, cycle: 3, reqs: ['cn1'] },
+                    { id: 'cn6', name: 'Información Contable Financiera para los Negocios', credits: 4, cycle: 3, reqs: ['cn3'] },
+                    { id: 'cn7', name: 'Gestión de Tesorería', credits: 3, cycle: 4, reqs: [] },
+                    { id: 'cn8', name: 'Contabilidad Gerencial para la Toma de Decisiones', credits: 4, cycle: 4, reqs: ['cn6'] },
+                    { id: 'cn9', name: 'Sistemas de Información Contable', credits: 4, cycle: 5, reqs: ['cn6'] },
+                    { id: 'cn10', name: 'Normas Contables Internacionales', credits: 4, cycle: 5, reqs: ['cn6'] },
+                    { id: 'cn11', name: 'Auditoría Financiera y Tributaria', credits: 4, cycle: 6, reqs: ['cn5', 'cn10'] },
+                    { id: 'cn12', name: 'Tributación Aplicada', credits: 3, cycle: 6, reqs: ['cn5'] }
+                ]
+            },
+            {
+                id: 'control-financiero',
+                name: 'Gestión y Control Financiero',
+                percentage: 27,
+                color: '#e53935',
+                borderColor: 'border-red-200',
+                badgeBg: 'bg-red-500',
+                courses: [
+                    { id: 'cf1', name: 'Matemática Aplicada a las Finanzas', credits: 3, cycle: 2, reqs: [] },
+                    { id: 'cf2', name: 'Herramientas Informáticas para las Finanzas', credits: 3, cycle: 2, reqs: [] },
+                    { id: 'cf3', name: 'Análisis Financiero para la Toma de Decisiones', credits: 4, cycle: 3, reqs: ['cf1'] },
+                    { id: 'cf4', name: 'Gestión de Capital de Trabajo', credits: 3, cycle: 3, reqs: [] },
+                    { id: 'cf5', name: 'Análisis de Costos y Presupuestos', credits: 4, cycle: 4, reqs: ['cn1'] },
+                    { id: 'cf6', name: 'Planificación y Control Financiero', credits: 4, cycle: 4, reqs: ['cf3'] },
+                    { id: 'cf7', name: 'Gestión Estratégica de Costos', credits: 4, cycle: 5, reqs: ['cf5'] },
+                    { id: 'cf8', name: 'Gestión Financiera Bancaria', credits: 3, cycle: 5, reqs: ['cf3'] },
+                    { id: 'cf9', name: 'Valorización de Empresas', credits: 3, cycle: 6, reqs: ['cf6'] },
+                    { id: 'cf10', name: 'Gestión del Riesgo', credits: 3, cycle: 6, reqs: ['cf6'] }
+                ]
+            },
+            {
+                id: 'gestion-negocios',
+                name: 'Gestión Estratégica de Negocios y Nuevas Tecnologías',
+                percentage: 14,
+                color: '#0080cb',
+                borderColor: 'border-blue-200',
+                badgeBg: 'bg-blue-600',
+                courses: [
+                    { id: 'gn1', name: 'Administración de Empresas y Responsabilidad Social', credits: 4, cycle: 1, reqs: [] },
+                    { id: 'gn2', name: 'Comunicación Escrita', credits: 3, cycle: 1, reqs: [] },
+                    { id: 'gn3', name: 'Matemática Aplicada', credits: 4, cycle: 1, reqs: [] },
+                    { id: 'gn4', name: 'Formulación y Evaluación de Proyectos', credits: 4, cycle: 5, reqs: ['cf3'] },
+                    { id: 'gn5', name: 'Inteligencia Artificial Aplicada', credits: 3, cycle: 6, reqs: [] }
+                ]
+            },
+            {
+                id: 'competencias-blandas',
+                name: 'Competencias Blandas',
+                percentage: 10,
+                color: '#fdd835',
+                borderColor: 'border-yellow-200',
+                badgeBg: 'bg-yellow-500',
+                courses: [
+                    { id: 'cb1', name: 'Competencias Intrapersonales', credits: 3, cycle: 1, reqs: [] },
+                    { id: 'cb2', name: 'Ética Profesional', credits: 3, cycle: 1, reqs: [] },
+                    { id: 'cb3', name: 'Resolución de Conflictos', credits: 3, cycle: 3, reqs: ['cb1'] },
+                    { id: 'cb4', name: 'Desarrollo de Resiliencia', credits: 3, cycle: 4, reqs: ['cb1'] }
+                ]
+            },
+            {
+                id: 'efsrt',
+                name: 'EFSRTs',
+                percentage: 10,
+                color: '#fbc02d',
+                borderColor: 'border-amber-200',
+                badgeBg: 'bg-amber-500',
+                courses: [
+                    { id: 'ef1', name: 'EFSRT 1', credits: 4, cycle: 2, reqs: [] },
+                    { id: 'ef2', name: 'EFSRT 2', credits: 4, cycle: 4, reqs: ['ef1'] },
+                    { id: 'ef3', name: 'EFSRT 3', credits: 4, cycle: 6, reqs: ['ef2'] }
+                ]
+            },
+            {
+                id: 'idiomas',
+                name: 'Idiomas',
+                percentage: 5,
+                color: '#1b6da8',
+                borderColor: 'border-sky-300',
+                badgeBg: 'bg-sky-700',
+                courses: [
+                    { id: 'idm1', name: 'English B1 - I', credits: 3, cycle: 2, reqs: [] },
+                    { id: 'idm2', name: 'English B1 - II', credits: 3, cycle: 4, reqs: ['idm1'] }
+                ]
+            }
+        ];
+
+        let userProgress = {};
+        let userCurrentCycle = 1;
+        let currentFilter = 'all';
+        let currentRecommendations = [];
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadProgress();
+            renderCategories();
+            renderDonutLegend();
+            updateDashboard();
+        });
+
+        function loadProgress() {
+            try {
+                const saved = localStorage.getItem('isil_accounting_progress');
+                if (saved) userProgress = JSON.parse(saved);
+                const savedCycle = localStorage.getItem('isil_accounting_user_cycle');
+                if (savedCycle) {
+                    userCurrentCycle = parseInt(savedCycle) || 1;
+                    document.getElementById('userCycleSelect').value = userCurrentCycle;
+                }
+            } catch (e) { userProgress = {}; }
+        }
+
+        function saveProgress() {
+            try {
+                localStorage.setItem('isil_accounting_progress', JSON.stringify(userProgress));
+                localStorage.setItem('isil_accounting_user_cycle', userCurrentCycle.toString());
+            } catch (e) { console.error(e); }
+        }
+
+        function changeUserCycle(val) {
+            userCurrentCycle = parseInt(val) || 1;
+            saveProgress();
+        }
+
+        function getCourseObj(courseId) {
+            if (!userProgress[courseId] || typeof userProgress[courseId] === 'boolean') {
+                userProgress[courseId] = { completed: !!userProgress[courseId], manualCompleted: false, finalGrade: '', pas: { pa1: '', pa2: '', pa3: '', pa4: '', ei: '' } };
+            }
+            return userProgress[courseId];
+        }
+
+        function toggleCourse(courseId) {
+            const courseObj = getCourseObj(courseId);
+            courseObj.manualCompleted = !courseObj.manualCompleted;
+            courseObj.completed = courseObj.manualCompleted;
+            saveProgress();
+            updateCourseUI(courseId);
+            updateDashboard();
+            filterCourses();
+        }
+
+        function updatePA(courseId, field, val) {
+            const courseObj = getCourseObj(courseId);
+            courseObj.pas[field] = val;
+            const weights = { pa1: 0.15, pa2: 0.15, pa3: 0.15, pa4: 0.15, ei: 0.40 };
+            let weightedSum = 0, totalWeight = 0;
+            for (let k in weights) {
+                if (courseObj.pas[k] !== '' && !isNaN(courseObj.pas[k])) {
+                    weightedSum += parseFloat(courseObj.pas[k]) * weights[k];
+                    totalWeight += weights[k];
+                }
+            }
+            if (totalWeight > 0) {
+                const calculated = weightedSum / totalWeight;
+                courseObj.finalGrade = calculated.toFixed(1);
+                if (totalWeight >= 0.99) courseObj.completed = parseFloat(courseObj.finalGrade) >= 12.5;
+            } else {
+                courseObj.finalGrade = '';
+                if (!courseObj.manualCompleted) courseObj.completed = false;
+            }
+            saveProgress();
+            updateCourseUI(courseId);
+            updateDashboard();
+            filterCourses();
+        }
+
+        function updateFinalGrade(courseId, val) {
+            const courseObj = getCourseObj(courseId);
+            courseObj.finalGrade = val;
+            courseObj.completed = val !== '' && !isNaN(val) && parseFloat(val) >= 12.5;
+            saveProgress();
+            updateCourseUI(courseId);
+            updateDashboard();
+            filterCourses();
+        }
+
+        function getCourseStatus(courseObj) {
+            if (courseObj.completed || courseObj.manualCompleted) return 'completed';
+            const hasAnyPA = Object.values(courseObj.pas).some(val => val !== '' && !isNaN(val));
+            if (hasAnyPA || (courseObj.finalGrade !== '' && !isNaN(courseObj.finalGrade))) return 'in-progress';
+            return 'pending';
+        }
+
+        function updateCourseUI(courseId) {
+            const element = document.getElementById(`course-${courseId}`);
+            if (!element) return;
+            const courseObj = getCourseObj(courseId);
+            const status = getCourseStatus(courseObj);
+            element.classList.remove('completed', 'in-progress');
+            element.dataset.status = status;
+
+            if (status === 'completed') {
+                element.classList.add('completed');
+                element.querySelector('.check-icon').classList.remove('hidden');
+                element.querySelector('.uncheck-icon').classList.add('hidden');
+                element.querySelector('.status-badge').innerHTML = '<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Aprobado</span>';
+            } else if (status === 'in-progress') {
+                element.classList.add('in-progress');
+                element.querySelector('.check-icon').classList.add('hidden');
+                element.querySelector('.uncheck-icon').classList.remove('hidden');
+                element.querySelector('.status-badge').innerHTML = '<span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">En Proceso</span>';
+            } else {
+                element.querySelector('.check-icon').classList.add('hidden');
+                element.querySelector('.uncheck-icon').classList.remove('hidden');
+                element.querySelector('.status-badge').innerHTML = '';
+            }
+            const finalInput = element.querySelector('.final-grade-input');
+            if (finalInput) finalInput.value = courseObj.finalGrade || '';
+        }
+
+        function markAll(status) {
+            curriculumData.forEach(category => {
+                category.courses.forEach(course => {
+                    const obj = getCourseObj(course.id);
+                    obj.manualCompleted = status;
+                    obj.completed = status;
+                });
+            });
+            saveProgress(); renderCategories(); updateDashboard(); filterCourses();
+        }
+
+        function resetProgress() {
+            if (confirm('¿Reiniciar todo tu progreso de Contabilidad?')) {
+                userProgress = {}; saveProgress(); renderCategories(); updateDashboard(); filterCourses();
+            }
+        }
+
+        function openRecommendationModal() {
+            document.getElementById('recommendationModal').classList.remove('hidden');
+            document.getElementById('targetCycleSelect').value = Math.min(6, userCurrentCycle + 1);
+            generateRecommendations();
+        }
+
+        function closeRecommendationModal() { document.getElementById('recommendationModal').classList.add('hidden'); }
+
+        function generateRecommendations() {
+            const targetCycle = parseInt(document.getElementById('targetCycleSelect').value) || 2;
+            const maxCourses = parseInt(document.getElementById('maxCoursesSelect').value) || 6;
+            const container = document.getElementById('recommendationsList');
+            container.innerHTML = ''; currentRecommendations = [];
+
+            const completedIds = [];
+            curriculumData.forEach(cat => cat.courses.forEach(c => {
+                if (getCourseStatus(getCourseObj(c.id)) === 'completed') completedIds.push(c.id);
+            }));
+
+            const eligibleCourses = [];
+            curriculumData.forEach(cat => cat.courses.forEach(c => {
+                if (getCourseStatus(getCourseObj(c.id)) === 'pending') {
+                    if (c.reqs.every(reqId => completedIds.includes(reqId))) {
+                        eligibleCourses.push({ ...c, categoryName: cat.name, categoryColor: cat.color });
+                    }
+                }
+            }));
+
+            eligibleCourses.sort((a, b) => {
+                if (a.cycle === targetCycle && b.cycle !== targetCycle) return -1;
+                if (b.cycle === targetCycle && a.cycle !== targetCycle) return 1;
+                return a.cycle - b.cycle;
+            });
+
+            currentRecommendations = eligibleCourses.slice(0, maxCourses);
+            if (currentRecommendations.length === 0) {
+                container.innerHTML = `<div class="p-6 text-center text-slate-500 bg-slate-50 rounded-xl"><p class="font-bold text-sm">¡No hay cursos pendientes sugeridos para el Ciclo ${targetCycle}!</p></div>`;
+                return;
+            }
+
+            container.innerHTML = currentRecommendations.map(c => `
+                <div class="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-3">
+                    <div class="flex items-start gap-3">
+                        <span class="w-3 h-3 rounded-full mt-1 flex-shrink-0" style="background-color: ${c.categoryColor}"></span>
+                        <div>
+                            <div class="flex items-center gap-2">
+                                <h4 class="font-bold text-xs text-slate-800">${c.name}</h4>
+                                <span class="text-[9px] bg-slate-200 text-slate-700 font-bold px-1.5 py-0.2 rounded">Ciclo Malla: ${c.cycle}</span>
+                            </div>
+                            <p class="text-[10px] text-slate-500 font-medium">${c.categoryName} • ${c.credits} créditos</p>
+                        </div>
+                    </div>
+                    <span class="text-[10px] bg-blue-100 text-blue-800 font-bold px-2 py-0.5 rounded-full flex-shrink-0">Sugerido</span>
+                </div>
+            `).join('');
+        }
+
+        function applyRecommendations() {
+            if (currentRecommendations.length === 0) return;
+            currentRecommendations.forEach(c => { getCourseObj(c.id).pas.pa1 = '14'; });
+            saveProgress(); renderCategories(); updateDashboard(); filterCourses(); closeRecommendationModal(); setFilter('in-progress');
+        }
+
+        function renderCategories() {
+            const container = document.getElementById('categoriesContainer');
+            container.innerHTML = '';
+            curriculumData.forEach(category => {
+                const totalCategoryCourses = category.courses.length;
+                const totalCategoryCredits = category.courses.reduce((sum, c) => sum + c.credits, 0);
+                const card = document.createElement('div');
+                card.className = `category-card bg-white rounded-2xl border ${category.borderColor} shadow-sm overflow-hidden flex flex-col justify-between`;
+                card.dataset.categoryId = category.id;
+
+                let coursesHTML = '';
+                category.courses.forEach(course => {
+                    const cObj = getCourseObj(course.id);
+                    const status = getCourseStatus(cObj);
+                    coursesHTML += `
+                        <div id="course-${course.id}" data-name="${course.name.toLowerCase()}" data-status="${status}" class="course-item p-3 rounded-xl border border-slate-100 hover:border-slate-300 bg-slate-50/50 hover:bg-slate-100/80 cursor-pointer flex flex-col gap-2.5 ${status === 'completed' ? 'completed' : (status === 'in-progress' ? 'in-progress' : '')}">
+                            <div class="flex items-start gap-3" onclick="toggleCourse('${course.id}')">
+                                <div class="mt-0.5 flex-shrink-0">
+                                    <div class="w-5 h-5 rounded-md border-2 border-slate-300 flex items-center justify-center bg-white transition-all check-box">
+                                        <i class="fa-solid fa-check text-xs text-emerald-600 check-icon ${status === 'completed' ? '' : 'hidden'}"></i>
+                                        <div class="w-2 h-2 rounded-full bg-slate-200 uncheck-icon ${status === 'completed' ? 'hidden' : ''}"></div>
+                                    </div>
+                                </div>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-center justify-between gap-1">
+                                        <p class="course-title text-xs font-semibold text-slate-800 leading-snug">${course.name}</p>
+                                        <div class="status-badge">${status === 'completed' ? '<span class="text-[9px] bg-emerald-100 text-emerald-800 font-bold px-1.5 py-0.5 rounded">Aprobado</span>' : (status === 'in-progress' ? '<span class="text-[9px] bg-blue-100 text-blue-800 font-bold px-1.5 py-0.5 rounded">En Proceso</span>' : '')}</div>
+                                    </div>
+                                    <div class="flex items-center gap-2 mt-0.5">
+                                        <span class="text-[10px] text-slate-400 font-medium">${course.credits} créditos</span>
+                                        <span class="text-[9px] font-bold text-slate-400 bg-slate-200/60 px-1.5 rounded">Ciclo ${course.cycle}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="flex flex-wrap items-center justify-between gap-1 pt-1.5 border-t border-slate-200/60 text-[9px] font-semibold text-slate-400" onclick="event.stopPropagation()">
+                                <div class="flex items-center gap-1"><span>PA1:</span><input type="number" min="0" max="20" step="0.5" value="${cObj.pas.pa1 || ''}" onchange="updatePA('${course.id}', 'pa1', this.value)" class="w-7 h-5 text-center bg-white border border-slate-200 rounded text-slate-700 text-[10px]"></div>
+                                <div class="flex items-center gap-1"><span>PA2:</span><input type="number" min="0" max="20" step="0.5" value="${cObj.pas.pa2 || ''}" onchange="updatePA('${course.id}', 'pa2', this.value)" class="w-7 h-5 text-center bg-white border border-slate-200 rounded text-slate-700 text-[10px]"></div>
+                                <div class="flex items-center gap-1"><span>PA3:</span><input type="number" min="0" max="20" step="0.5" value="${cObj.pas.pa3 || ''}" onchange="updatePA('${course.id}', 'pa3', this.value)" class="w-7 h-5 text-center bg-white border border-slate-200 rounded text-slate-700 text-[10px]"></div>
+                                <div class="flex items-center gap-1"><span>PA4:</span><input type="number" min="0" max="20" step="0.5" value="${cObj.pas.pa4 || ''}" onchange="updatePA('${course.id}', 'pa4', this.value)" class="w-7 h-5 text-center bg-white border border-slate-200 rounded text-slate-700 text-[10px]"></div>
+                                <div class="flex items-center gap-1"><span>EI:</span><input type="number" min="0" max="20" step="0.5" value="${cObj.pas.ei || ''}" onchange="updatePA('${course.id}', 'ei', this.value)" class="w-7 h-5 text-center bg-white border border-slate-200 rounded text-slate-700 text-[10px]"></div>
+                                <div class="flex items-center gap-1 ml-auto"><span class="text-slate-600 font-bold">Nota:</span><input type="number" min="0" max="20" step="0.1" placeholder="--" value="${cObj.finalGrade || ''}" onchange="updateFinalGrade('${course.id}', this.value)" class="final-grade-input w-9 h-5 text-center font-bold bg-white border border-slate-300 rounded text-slate-800 text-[10px]"></div>
+                            </div>
+                        </div>`;
+                });
+
+                card.innerHTML = `
+                    <div class="p-5">
+                        <div class="flex items-start justify-between gap-3 mb-3">
+                            <div>
+                                <span class="text-[10px] font-bold uppercase tracking-wider text-slate-400">${totalCategoryCourses} Cursos • ${totalCategoryCredits} Créditos</span>
+                                <h3 class="text-sm font-bold text-slate-900 leading-tight mt-0.5">${category.name}</h3>
+                            </div>
+                            <span class="px-2.5 py-1 rounded-md text-white font-black text-xs ${category.badgeBg} flex-shrink-0 shadow-sm">${category.percentage}%</span>
+                        </div>
+                        <div class="mb-4">
+                            <div class="flex justify-between text-[11px] font-semibold text-slate-500 mb-1">
+                                <span id="cat-progress-text-${category.id}">0 / ${totalCategoryCourses} completados</span>
+                                <span id="cat-progress-pct-${category.id}">0%</span>
+                            </div>
+                            <div class="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                                <div id="cat-progress-bar-${category.id}" class="h-full transition-all duration-300 rounded-full" style="background-color: ${category.color}; width: 0%"></div>
+                            </div>
+                        </div>
+                        <div class="space-y-2 category-courses-list">${coursesHTML}</div>
+                    </div>`;
+                container.appendChild(card);
+            });
+        }
+
+        function renderDonutLegend() {
+            const legendContainer = document.getElementById('donutLegend');
+            legendContainer.innerHTML = '';
+            curriculumData.forEach(cat => {
+                const item = document.createElement('div');
+                item.className = "flex items-center justify-between text-slate-600 hover:text-slate-900 transition-colors py-0.5";
+                item.innerHTML = `<div class="flex items-center gap-2 truncate pr-2"><span class="w-2.5 h-2.5 rounded-full flex-shrink-0" style="background-color: ${cat.color}"></span><span class="truncate font-medium text-[11px]">${cat.name}</span></div><span class="font-bold text-[11px] text-slate-700 flex-shrink-0">${cat.percentage}%</span>`;
+                legendContainer.appendChild(item);
+            });
+        }
+
+        function updateDashboard() {
+            let totalCourses = 0, completedCourses = 0, inProgressCourses = 0, pendingCourses = 0;
+            let totalCredits = 0, earnedCredits = 0, weightedSum = 0, weightedCredits = 0;
+
+            curriculumData.forEach(category => {
+                let catCompleted = 0;
+                category.courses.forEach(course => {
+                    totalCourses++; totalCredits += course.credits;
+                    const cObj = getCourseObj(course.id);
+                    const status = getCourseStatus(cObj);
+
+                    if (status === 'completed') {
+                        completedCourses++; earnedCredits += course.credits; catCompleted++;
+                        if (cObj.finalGrade && !isNaN(cObj.finalGrade)) {
+                            weightedSum += parseFloat(cObj.finalGrade) * course.credits;
+                            weightedCredits += course.credits;
+                        }
+                    } else if (status === 'in-progress') inProgressCourses++;
+                    else pendingCourses++;
+                });
+
+                const catPct = Math.round((catCompleted / category.courses.length) * 100);
+                const bar = document.getElementById(`cat-progress-bar-${category.id}`);
+                const text = document.getElementById(`cat-progress-text-${category.id}`);
+                const pctText = document.getElementById(`cat-progress-pct-${category.id}`);
+                if (bar) bar.style.width = `${catPct}%`;
+                if (text) text.innerText = `${catCompleted} / ${category.courses.length} completados`;
+                if (pctText) pctText.innerText = `${catPct}%`;
+            });
+
+            const globalPct = Math.round((completedCourses / totalCourses) * 100);
+            const gpa = weightedCredits > 0 ? (weightedSum / weightedCredits).toFixed(2) : '--.--';
+
+            document.getElementById('completedCoursesCount').innerText = completedCourses;
+            document.getElementById('inProgressCoursesCount').innerText = inProgressCourses;
+            document.getElementById('totalCreditsCount').innerText = `${earnedCredits}/${totalCredits}`;
+            document.getElementById('globalPercentageBadge').innerText = `${globalPct}%`;
+            document.getElementById('globalProgressBar').style.width = `${globalPct}%`;
+            document.getElementById('gpaScore').innerText = gpa;
+
+            document.getElementById('countAll').innerText = totalCourses;
+            document.getElementById('countPending').innerText = pendingCourses;
+            document.getElementById('countInProgress').innerText = inProgressCourses;
+            document.getElementById('countCompleted').innerText = completedCourses;
+
+            updateDonutChart(completedCourses, totalCourses);
+        }
+
+        function updateDonutChart(completedCourses, totalCourses) {
+            const svg = document.getElementById('donutSvg');
+            svg.innerHTML = '<circle cx="50" cy="50" r="38" stroke="#f1f5f9" stroke-width="18" fill="none" />';
+            const radius = 38, circumference = 2 * Math.PI * radius;
+            let accumulatedOffset = 0;
+
+            curriculumData.forEach(cat => {
+                const catCompletedCourses = cat.courses.filter(c => getCourseStatus(getCourseObj(c.id)) === 'completed').length;
+                const catRatio = catCompletedCourses / totalCourses;
+                const dashLength = catRatio * circumference;
+
+                if (dashLength > 0) {
+                    const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                    circle.setAttribute('cx', '50'); circle.setAttribute('cy', '50'); circle.setAttribute('r', radius);
+                    circle.setAttribute('stroke', cat.color); circle.setAttribute('stroke-width', '18'); circle.setAttribute('fill', 'none');
+                    circle.setAttribute('stroke-dasharray', `${dashLength} ${circumference - dashLength}`);
+                    circle.setAttribute('stroke-dashoffset', -accumulatedOffset);
+                    circle.classList.add('donut-segment');
+                    svg.appendChild(circle);
+                    accumulatedOffset += dashLength;
+                }
+            });
+        }
+
+        function setFilter(filter) {
+            currentFilter = filter;
+            document.querySelectorAll('.filter-btn').forEach(btn => { btn.className = "filter-btn px-3 py-2 rounded-lg transition-all text-slate-600 hover:text-slate-900"; });
+            const btnMap = { 'all': 'filterAll', 'pending': 'filterPending', 'in-progress': 'filterInProgress', 'completed': 'filterCompleted' };
+            const activeBtn = document.getElementById(btnMap[filter]);
+            if (activeBtn) activeBtn.className = "filter-btn px-3 py-2 rounded-lg transition-all bg-white text-slate-900 font-bold shadow-sm";
+            filterCourses();
+        }
+
+        function filterCourses() {
+            const searchVal = document.getElementById('searchInput').value.toLowerCase().trim();
+            document.querySelectorAll('.category-card').forEach(card => {
+                let hasVisibleCourses = false;
+                card.querySelectorAll('.course-item').forEach(item => {
+                    const name = item.dataset.name, status = item.dataset.status;
+                    let matchesFilter = (currentFilter === 'all' || status === currentFilter);
+                    let matchesSearch = name.includes(searchVal);
+                    if (matchesFilter && matchesSearch) { item.style.display = 'flex'; hasVisibleCourses = true; }
+                    else { item.style.display = 'none'; }
+                });
+                card.style.display = hasVisibleCourses ? 'flex' : 'none';
+            });
+        }
+    </script>
+</body>
+</html>
